@@ -6,7 +6,11 @@ import asyncio
 import matplotlib.pyplot as plt
 from datetime import datetime
 import warnings
+
 warnings.filterwarnings("ignore")
+import nest_asyncio
+
+nest_asyncio.apply()
 
 st.set_page_config(page_title="Прогноз погоды", layout="centered")
 API_KEY = TOKEN
@@ -15,11 +19,17 @@ CITIES = ['New York', 'London', 'Paris', 'Tokyo', 'Moscow', 'Sydney',
           'Singapore', 'Mumbai', 'Cairo', 'Mexico City']
 
 SEASONS = ['spring', 'summer', 'autumn', 'winter']
-RAW_DATA_URL = 'https://github.com/disimhot/advanced_python/blob/main/streamlit_app/temperature_data.csv'
+RAW_DATA_URL = 'https://raw.githubusercontent.com/disimhot/advanced_python/main/streamlit_app/temperature_data.csv'
+MONTH_SEASONS = {
+    'winter': [1, 2, 3],
+    'spring': [4, 5, 6],
+    'summer': [7, 8, 9],
+    'autumn': [10, 11, 12]
+}
+
 
 async def get_weather(city):
-    print("Getting")
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
+    url = f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
     response = requests.get(url)
     if response.status_code == 200:
         return response.json()
@@ -118,6 +128,7 @@ def plot_city_season_year_anomalies(city_data_year, year):
     x = city_data_year['day_month']
     ticks = city_data_year['day_month'][::10]
     anomalies = city_data_year['anomaly']
+
     st.subheader(f'Аномальные точки в году {year}')
     fig = plt.figure(
         figsize=(8, 8),
@@ -134,7 +145,7 @@ def plot_city_season_year_anomalies(city_data_year, year):
         label='Температура'
     )
     plt.plot(
-        x, city_data_year['min'],
+        x, city_data_year['min_temp'],
         color='lightsteelblue',
         linestyle=':',
         alpha=1,
@@ -142,7 +153,7 @@ def plot_city_season_year_anomalies(city_data_year, year):
         label='Минимальная температура'
     )
     plt.plot(
-        x, city_data_year['max'],
+        x, city_data_year['max_temp'],
         color='lightsteelblue',
         linestyle=':',
         alpha=1,
@@ -185,13 +196,24 @@ def plot_city_season_year_anomalies(city_data_year, year):
     st.pyplot(fig)
 
 
+def get_season_by_month(month):
+    for season, months in MONTH_SEASONS.items():
+        if month in months:
+            return season
+    return None
+
+
 def check_anomalies(city_data, current_weather):
     current_day = datetime.now().day
     current_month = datetime.now().month
-    temp_data = city_data[(city_data['day'] == current_day) & (city_data['month'] == current_month)][
-        ['rolling_mean', 'rolling_std']]
-    has_anomaly = (current_weather > temp_data['rolling_mean'] + 2 * temp_data['rolling_std']) | (
-            current_weather < temp_data['rolling_mean'] - 2 * temp_data['rolling_std'])
+    season = get_season_by_month(current_month)
+
+    city_data['std'] = city_data.groupby('season', group_keys=False)['temperature'].transform('std')
+    city_data['mean'] = city_data.groupby('season', group_keys=False)['temperature'].transform('mean')
+    temp_data = city_data[(city_data['day'] == current_day) & (city_data['month'] == current_month)]
+    st.dataframe(temp_data)
+    has_anomaly = (current_weather > temp_data['mean'].mean() + 2 * temp_data['std'].std()) | (
+            current_weather < temp_data['mean'].mean() - 2 * temp_data['std'].std())
     if has_anomaly:
         st.warning("Внимание! Температура на текущей дате выходит за пределы допустимых значений.")
     else:
@@ -213,21 +235,12 @@ async def main():
     df['year'] = df['timestamp'].dt.year
     city_df = df[df['city'] == city]
     weather = None
-    if st.button("Получить погоду"):
-        # with st.spinner("Processing... Please wait."):
-
+    if st.button("Получить текущую погоду"):
         weather = await get_weather(city)
-        check_anomalies(city_df, weather)
         st.success(f"Температура в {city}: {weather['main']['temp']}°C")
-        # print(weather)
-        # if weather:
-        #     st.success(f"Температура в {city}: {weather['main']['temp']}°C")
-        #
-        # else:
-        #     st.error("Ошибка при запросе данных")
-        #
+        check_anomalies(city_df, weather)
 
-    city_data =  analyze_city_trend(city_df, season)
+    city_data = analyze_city_trend(city_df, season)
     plot_city_trend(city_data)
 
     year = st.selectbox("Choose year", city_df['timestamp'].dt.year.unique())
