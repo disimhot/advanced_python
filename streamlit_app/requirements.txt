@@ -74,3 +74,4 @@ setuptools==75.6.0
 statsmodels==0.14.4
 typeguard==4.4.1
 wordcloud==1.9.4
+nest-asyncio==1.6.0
