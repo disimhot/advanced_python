@@ -23,7 +23,6 @@ async def get_weather(city):
     print("Getting")
     url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&units=metric"
     response = requests.get(url)
-    print('resp', response.json())
     if response.status_code == 200:
         return response.json()
     else:
