@@ -5,6 +5,7 @@ from config import TOKEN
 import asyncio
 import matplotlib.pyplot as plt
 from datetime import datetime
+import numpy as np
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -15,7 +16,7 @@ CITIES = ['New York', 'London', 'Paris', 'Tokyo', 'Moscow', 'Sydney',
           'Singapore', 'Mumbai', 'Cairo', 'Mexico City']
 
 SEASONS = ['spring', 'summer', 'autumn', 'winter']
-
+RAW_DATA_URL = 'https://github.com/disimhot/advanced_python/blob/main/streamlit_app/out.csv'
 
 async def get_weather(city):
     print("Getting")
@@ -202,7 +203,11 @@ async def main():
     st.title("Прогноз погоды")
     city = st.selectbox("Choose city", CITIES)
     season = st.selectbox("Choose season", SEASONS)
-    df = pd.read_csv("out.csv")
+    # Fetch the raw file content
+
+    df = pd.read_csv('df.csv', index_col=0).replace(np.nan, None)
+    df.to_csv('df.csv', sep=';')
+
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df['day_month'] = df['timestamp'].dt.strftime('%d-%b')
     df['day'] = df['timestamp'].dt.day
