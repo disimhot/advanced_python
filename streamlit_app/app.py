@@ -211,9 +211,7 @@ def check_anomalies(city_data, current_weather):
     city_data['std'] = city_data.groupby('season', group_keys=False)['temperature'].transform('std')
     city_data['mean'] = city_data.groupby('season', group_keys=False)['temperature'].transform('mean')
     temp_data = city_data[(city_data['day'] == current_day) & (city_data['month'] == current_month)].reset_index()
-    print('current_weather', current_weather)
-    print('temp_datamean][0] ', temp_data['mean'][0] )
-    print('temp_datastd][0] ', temp_data['std'][0] )
+
     has_anomaly = (current_weather > temp_data['mean'][0] + 2 * temp_data['std'][0]) | (
             current_weather < temp_data['mean'][0] - 2 * temp_data['std'][0])
 
