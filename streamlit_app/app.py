@@ -10,15 +10,11 @@ from datetime import datetime
 import warnings
 import numpy as np
 import nest_asyncio
-
-# Suppress warnings
 warnings.filterwarnings("ignore")
 nest_asyncio.apply()
 
-# Streamlit Configurations
 st.set_page_config(page_title="Прогноз погоды", layout="centered")
 
-# Constants
 API_KEY = TOKEN
 CITIES = ['New York', 'London', 'Paris', 'Tokyo', 'Moscow', 'Sydney',
           'Berlin', 'Beijing', 'Rio de Janeiro', 'Dubai', 'Los Angeles',
@@ -32,7 +28,6 @@ MONTH_SEASONS = {
     'autumn': [10, 11, 12]
 }
 
-# Pydantic Models
 class MainWeatherData(BaseModel):
     temp: float = Field(..., description="Температура в градусах Цельсия")
 
@@ -49,7 +44,7 @@ class CityData(BaseModel):
     day_month: str
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-# Utility Functions
+
 def get_season_by_month(month: int) -> Optional[str]:
     for season, months in MONTH_SEASONS.items():
         if month in months:
@@ -84,7 +79,7 @@ def check_anomalies(city_data: pd.DataFrame, current_weather: float):
         else:
             st.success("Температура сегодня не является аномальной")
 
-# Analysis Functions
+
 def analyze_city_trend(city_data: pd.DataFrame, season: str, window_size: int = 30) -> pd.DataFrame:
     try:
         city_data['season'] = city_data['month'].apply(get_season_by_month)
@@ -110,7 +105,6 @@ def analyze_city_trend(city_data: pd.DataFrame, season: str, window_size: int = 
         st.error(f"Ошибка анализа данных: {e}")
         return pd.DataFrame()
 
-# Plotting Functions
 def plot_city_trend(city_data: pd.DataFrame):
     try:
         ticks = city_data['day_month'].unique()[::10]
@@ -213,7 +207,6 @@ def plot_city_season_year_anomalies(data: pd.DataFrame, year: int):
     except Exception as e:
         print(f'Произошла ошибка при построении графика: {e}')
 
-# Main Application Logic
 async def main():
     st.title("Прогноз погоды")
 
