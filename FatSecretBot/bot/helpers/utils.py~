@@ -1,0 +1,51 @@
+from pydantic import BaseModel
+from typing import List, Optional, Dict
+import aiohttp
+
+from config import FAT_SECRET_TOKEN_URL, FAT_SECRET_PASSWORD, FAT_SECRET_API_URL, \
+    FAT_SECRET_USERNAME
+
+from bot.models.models import *
+
+
+class Person(BaseModel):
+    food: str
+    amount: int
+    expires_in: Optional[int]
+    bearer: Optional[str]
+
+    async def _get_token(self) -> None:
+        async with aiohttp.ClientSession() as session:
+            auth_url = f"{FAT_SECRET_TOKEN_URL}"
+            data = {
+                "grant_type": "client_credentials",
+                "username": FAT_SECRET_USERNAME,
+                "password": FAT_SECRET_PASSWORD,
+            }
+            async with session.post(auth_url, json=data) as response:
+                response_json = await response.json()
+
+                return response_json["access_token"], response_json["expires_in"]
+
+    async def fetch_fatsecret_data(self):
+        async with aiohttp.ClientSession() as session:
+            fatsecret_url = "https://platform.fatsecret.com/rest/server.api"
+            headers = {
+                "Authorization": "Bearer "
+                                 "eyJhbGciOiJSUzI1NiIsImtpZCI6IjEwOEFEREZGRjZBNDkxOUFBNDE4QkREQTYwMDcwQzE5NzNDRjMzMUUiLCJ0eXAiOiJhdCtqd3QiLCJ4NXQiOiJFSXJkX19ha2tacWtHTDNhWUFjTUdYUFBNeDQifQ.eyJuYmYiOjE3MzcyMjQxMTQsImV4cCI6MTczNzMxMDUxNCwiaXNzIjoiaHR0cHM6Ly9vYXV0aC5mYXRzZWNyZXQuY29tIiwiYXVkIjoiYmFzaWMiLCJjbGllbnRfaWQiOiJkNDIxMmNlZTc1YzI0OWI3YWNmYWUyN2ExZDAxMDVkMyIsInNjb3BlIjpbImJhc2ljIl19.Als0wm9vCa069bXhXWqnO8EMlJMlkyheR8L3pVd0HLFH5LsoJof8q2e6kdMZyQqeOSbeu-Xq4u0PCU37lyfNnWVXIwtzGX_kO0iInPzx3y3v85bnBkDvD__ENk01dAEwmDG9t4seOO_nM3pQQNVwBwlWZe7Cb1JF7fX9NDwKb6_RvW2THCCKmv6bfyq0vt3tciGpwSqTb7RufhQvOdDF8Jp6rCfuCMSU352UvhvB6OZCaGmv_bfzCSoSiwGJtt2mJWnt8KN81OjHNiGAFDe1DKt110YKoHEMpJOxNpI6vqzfqCLfmw6TGXC7lrQsq0thhqdeNz17jy_YjznHUsL--IpSi0CUyidZN5IvGCOLux2S8_FcrOxPwc9T_a0um4o-cqVmGFWRHT6uESNsYE4moNGluYFO525e1VmH7Vb8xmMlmJwmyB7ISw4rJXHSdFH7eLWp4DCJKX5eFxdRt66f5m5t-RZZTDq-gy6F7b5UY1X8GYNgQYx3DjFU9UOE6j2dtLieqmRsZTKVMJYOCJTcfNc9mDWJOVMNH89Mjd2Ts5eyXo_A97x6Q9li5na-FVyTVD7NF4IPUfrd1Ia8bMl9Jje0dMTnIhx8Gvg117BZEECshnOOGSDTfiS3q4JpwkTlJNw1GdgBffbhhKdn0P3iadoZPxtVVcBaCCLz0IpS0T4",
+                "Content-Type": "application/json"
+            }
+            params = {
+                'method': 'foods.search',  # Example     method
+                'search_expression': 'toast',  # Example search term
+                'format': 'json'
+            }
+            query_string = urllib.parse.urlencode(params)
+            url_with_params = f"{fatsecret_url}?{query_string}"
+            async with session.get(url_with_params, headers=headers) as response:
+                if response.status == 200:
+                    resp = await response.json()
+                    print('resp', resp)
+                    return resp
+                else:
+                    return None

@@ -1,0 +1,36 @@
+import asyncio
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import BotCommand
+
+from config import API_TOKEN
+from src.handlers import echo
+from src.helpers.bot_commands import BotCommands
+from src.handlers import CommonHandlers
+
+class BotApp:
+    def __init__(self, token: str):
+        self.token = token
+        self.bot = Bot(token=token)
+        self.dp = Dispatcher()
+        self.dp.include_router(echo.router)
+
+    async def set_commands(self):
+        await self.bot.set_my_commands(BotCommands)
+
+    async def on_startup(self):
+        CommonHandlers.register_client_handlers(self.dp)
+        await self.set_commands()
+
+    async def start_polling(self):
+        await self.dp.start_polling(self.bot, allowed_updates=self.dp.resolve_used_update_types())
+
+    async def run(self):
+        await self.start_polling()
+        await self.on_startup()
+
+
+
+# Main entry point
+if __name__ == '__main__':
+    app = BotApp(API_TOKEN)
+    asyncio.run(app.run())

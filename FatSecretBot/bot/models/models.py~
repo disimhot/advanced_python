@@ -1,0 +1,6 @@
+from pydantic import BaseModel, ValidationError, ConfigDict, Field, Extra
+
+class MainWeatherData(BaseModel, extra='allow'):
+    temp: float
+class WeatherResponse(BaseModel, extra='allow'):
+    main: MainWeatherData
